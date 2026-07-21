@@ -8,6 +8,8 @@ data/runs/*
 !data/runs/.gitkeep
 data/opportunities/*
 !data/opportunities/.gitkeep
+data/content/*
+!data/content/.gitkeep
 dist/
 build/
 .DS_Store

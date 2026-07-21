@@ -40,16 +40,22 @@ python -m src.autooss.cli daily --top 1
 python -m src.autooss.cli daily --top 1 --push
 ```
 
-## Schedule (cron)
+## Run on your behalf (fleet + schedule)
 
 ```bash
-chmod +x scripts/daily_loop.sh
-# every day 09:00 local
-crontab -e
-# 0 9 * * * /Users/YOU/autooss-factory/scripts/daily_loop.sh
+# Test ALL portfolio repos (+ local load tests if services up)
+python -m src.autooss.cli fleet
+
+# Full cycle: fleet tests + discover gaps + scaffold next idea
+python -m src.autooss.cli cycle
+
+# Install background runner (every 6 hours while Mac is logged in)
+bash scripts/install_automation.sh
 ```
 
-Or GitHub Actions cron on a private runner with secrets.
+Details: [docs/AUTOMATION.md](./docs/AUTOMATION.md)
+
+Cron backup at 09:00: `scripts/daily_loop.sh` (already installable via crontab).
 
 ## Already shipped portfolio (manual)
 
