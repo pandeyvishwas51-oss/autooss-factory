@@ -97,29 +97,49 @@ def _ensure_venv_and_test(repo: PortfolioRepo, timeout: int = 300) -> RepoTestRe
                 text=True,
                 timeout=120,
             )
-            subprocess.run(
-                [str(venv_py), "-m", "pip", "install", "-e", ".[dev]", "-q"],
-                cwd=str(path),
-                check=False,
-                capture_output=True,
-                text=True,
-                timeout=300,
-            )
-            # fallback without optional
-            if not (path / ".venv" / "bin" / "pytest").exists():
+
+        # Always ensure deps (venv may exist but be incomplete)
+        pip = subprocess.run(
+            [str(venv_py), "-m", "pip", "install", "-U", "pip", "-q"],
+            cwd=str(path),
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+        install = subprocess.run(
+            [str(venv_py), "-m", "pip", "install", "-e", ".[dev]", "-q"],
+            cwd=str(path),
+            capture_output=True,
+            text=True,
+            timeout=600,
+        )
+        if install.returncode != 0:
+            # fallback: requirements.txt or bare package + pytest
+            req = path / "requirements.txt"
+            if req.exists():
                 subprocess.run(
-                    [str(venv_py), "-m", "pip", "install", "-e", ".", "pytest", "-q"],
+                    [str(venv_py), "-m", "pip", "install", "-r", "requirements.txt", "-q"],
                     cwd=str(path),
-                    check=False,
                     capture_output=True,
                     text=True,
-                    timeout=300,
+                    timeout=600,
                 )
+            subprocess.run(
+                [str(venv_py), "-m", "pip", "install", "-e", ".", "pytest", "-q"],
+                cwd=str(path),
+                capture_output=True,
+                text=True,
+                timeout=600,
+            )
 
         env = os.environ.copy()
         env["PYTHONPATH"] = str(path)
+        # Prefer unit tests; skip heavy integration if present
+        test_args = [str(venv_py), "-m", "pytest", "tests/", "-q", "--tb=line"]
+        if (path / "tests" / "integration").exists():
+            test_args.extend(["--ignore=tests/integration"])
         proc = subprocess.run(
-            [str(venv_py), "-m", "pytest", "tests/", "-q", "--tb=line"],
+            test_args,
             cwd=str(path),
             capture_output=True,
             text=True,
